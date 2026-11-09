@@ -1,0 +1,15 @@
+{
+  "name": "makeup-weather-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "今日妆容天气预报 Cloudflare Worker。DashScope 密钥只通过 DASHSCOPE_API_KEY 注入，不要写进仓库。",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.158.0"
+  }
+}

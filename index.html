@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3efe6" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="上传一张自拍，得到今天的妆容天气预报：出镜指数、四维天气和三套出门配方。美学娱乐建议，不是医疗诊断。"
+    />
+    <meta property="og:title" content="今日妆容天气预报" />
+    <meta
+      property="og:description"
+      content="美学娱乐建议，不是医疗诊断。把今天的光线写成一份可以出门的妆容预报。"
+    />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href="https://brian-lem.github.io/makeup-weather/" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <title>今日妆容天气预报</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <circle cx="24" cy="24" r="8" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+          <path
+            d="M24 6v5M24 37v5M6 24h5M37 24h5M11 11l3.5 3.5M33.5 33.5 37 37M37 11l-3.5 3.5M11 37l3.5-3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          ></path>
+        </svg>
+        <div>
+          <p class="brand-en">Makeup Weather</p>
+          <h1>今日妆容天气预报</h1>
+        </div>
+      </div>
+      <p id="today" class="today"></p>
+      <button type="button" class="connection" id="open-settings">接入设置 · 未接入</button>
+    </header>
+
+    <main class="page">
+      <section id="home" class="panel hero">
+        <div class="lede">
+          <p class="issue">第 001 号 · 美学报</p>
+          <h2>把今天的光线，写成可以出门的妆。</h2>
+          <p class="deck">
+            一张自拍，一份只属于今天的预报。它看的是光线、色彩和气色，写成天气：肤质是晴是雾，五官落在哪一道光里，色彩往哪边吹，妆面要不要再湿一点。然后给你通勤、约会、轻松出门三套手法。
+          </p>
+          <ul class="points">
+            <li>自拍只在这台设备上收成大约 1280px 的 JPEG，重编码会去掉位置信息。</li>
+            <li>「预览示例」不联网，用来先看一份完整预报长什么样。</li>
+            <li>正式预报只发给你自己填写的 Worker。这个网站不保存照片，也不向你要 API 密钥。</li>
+          </ul>
+        </div>
+
+        <form class="station" id="station">
+          <div class="station-head">
+            <p class="kicker">今日观测</p>
+            <p>先选场合，再放一张正面、光线清楚的自拍。支持 JPG、PNG、WebP。</p>
+          </div>
+          <fieldset class="occasions">
+            <legend>今天更在意</legend>
+            <label class="occasion"><input type="radio" name="occasion" value="通勤" checked /> 通勤</label>
+            <label class="occasion"><input type="radio" name="occasion" value="约会" /> 约会</label>
+            <label class="occasion"><input type="radio" name="occasion" value="轻松出门" /> 轻松出门</label>
+          </fieldset>
+          <label class="dropzone" id="dropzone">
+            <input id="photo" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp,.heic,.heif" />
+            <span class="dropzone-title">把自拍放在这里</span>
+            <span class="dropzone-hint">也可以拖进来。压缩在浏览器里完成，大约 1280px。</span>
+          </label>
+          <img id="photo-preview" class="photo-preview" alt="待预报的自拍预览" hidden />
+          <p id="photo-meta" class="photo-meta"></p>
+          <p id="home-error" class="home-error" role="alert"></p>
+          <div class="home-actions">
+            <button type="button" class="btn btn-primary" id="generate" disabled>生成今日预报</button>
+            <button type="button" class="btn btn-line" id="preview">预览示例</button>
+            <button type="button" class="btn btn-ghost" id="clear-photo" hidden>清除照片</button>
+          </div>
+          <p class="fineprint">美学娱乐建议，不是医疗诊断。</p>
+        </form>
+      </section>
+
+      <section id="loading" class="panel loading" hidden>
+        <div class="loading-sun" aria-hidden="true"></div>
+        <p id="loading-text" aria-live="polite">正在看今天的光线</p>
+        <p class="fineprint">照片还在这台设备上。预览示例不会把它发出去。</p>
+      </section>
+
+      <section id="result" class="panel" hidden></section>
+    </main>
+
+    <footer class="site-footer">
+      <p>美学娱乐建议，不是医疗诊断。不判断皮肤疾病，不推荐处方和医美。</p>
+      <p>照片不会写入这个仓库，也不会进相册。预览示例完全在本地完成。</p>
+      <p><a href="https://github.com/Brian-lem/makeup-weather">项目说明与 Worker 部署步骤</a></p>
+    </footer>
+
+    <dialog id="settings-dialog" class="settings" aria-labelledby="settings-title">
+      <form id="settings-form">
+        <p class="kicker">本地保存</p>
+        <h2 id="settings-title">接入设置</h2>
+        <p>
+          如果你已经自己部署了 Cloudflare Worker，把地址放在这里。网页只会把缩小后的照片发给这个地址，请求结束就不留底。
+        </p>
+        <p>
+          DashScope 的密钥请放在 Cloudflare 的环境变量 <strong>DASHSCOPE_API_KEY</strong> 里。这个网页不会向你索取密钥，也不要把它粘贴到下面。
+        </p>
+        <label class="field" for="worker-url">Worker 地址</label>
+        <input
+          id="worker-url"
+          name="workerUrl"
+          type="text"
+          inputmode="url"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="https://your-name.workers.dev"
+        />
+        <p id="settings-message" role="status"></p>
+        <p id="settings-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="submit" class="btn btn-primary" id="save-worker">保存地址</button>
+          <button type="button" class="btn btn-line" id="test-worker">测试地址</button>
+          <button type="button" class="btn btn-ghost" id="clear-worker">清除</button>
+          <button type="button" class="btn btn-ghost" id="close-settings">关闭</button>
+        </div>
+      </form>
+    </dialog>
+
+    <noscript>
+      <p class="noscript">需要开启 JavaScript 才能选择照片和生成本地预览。美学娱乐建议，不是医疗诊断。</p>
+    </noscript>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
