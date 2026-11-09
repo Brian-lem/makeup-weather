@@ -95,4 +95,17 @@ npm test
 
 ## 发布
 
-GitHub Pages 从 `main` 分支的根目录提供这个静态站点。Worker 不在 Pages 上运行。
+静态站点从 `main` 分支的根目录发布。仓库所有者在 GitHub 的 Settings → Pages 里选择 Deploy from a branch，分支 `main`，目录 `/ (root)`。启用后的地址是 [https://brian-lem.github.io/makeup-weather/](https://brian-lem.github.io/makeup-weather/)。
+
+也可以用自己的管理员令牌调用：
+
+```bash
+gh api --method POST \
+  -H "Accept: application/vnd.github+json" \
+  /repos/Brian-lem/makeup-weather/pages \
+  -f build_type=legacy \
+  -f source[branch]=main \
+  -f source[path]=/
+```
+
+Worker 不在 Pages 上运行。
