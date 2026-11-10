@@ -1,6 +1,31 @@
 export const STORAGE_KEY = "makeup-weather.workerUrl";
 
+// Built-in production endpoint. Visitors do not configure this.
+export const DEFAULT_API_BASE = "https://makeup-weather-veefqfizvy.cn-hangzhou.fcapp.run";
+
 const SENSITIVE_PARAMS = ["key", "token", "api_key", "apikey", "secret", "access_token", "dashscope_api_key"];
+
+export function devOverrideEnabled(href = currentHref()) {
+  if (!href) return false;
+  try {
+    return new URL(href).searchParams.get("dev") === "1";
+  } catch {
+    return false;
+  }
+}
+
+// A previously saved Worker URL must not hijack a normal visit.
+// Only ?dev=1 may replace the built-in endpoint, and only with a URL that passes validation.
+export function resolveApiUrl({ dev = devOverrideEnabled(), saved = readWorkerUrl() } = {}) {
+  if (!dev) return DEFAULT_API_BASE;
+  const check = validateWorkerUrl(saved);
+  return check.ok ? check.url : DEFAULT_API_BASE;
+}
+
+function currentHref() {
+  if (typeof location === "undefined" || !location?.href) return "";
+  return location.href;
+}
 
 export function readWorkerUrl() {
   try {
@@ -72,7 +97,7 @@ export async function requestForecast(workerUrl, payload) {
       signal: AbortSignal.timeout(45_000),
     });
   } catch {
-    throw new Error("没有连上 Worker。可以稍后再试，或先看预览示例。照片还在这台设备上。");
+    throw new Error("没有连上预报服务。可以稍后再试，或先看预览示例。照片还在这台设备上。");
   }
 
   let data = null;
@@ -95,7 +120,7 @@ export async function probeWorker(workerUrl) {
   });
   const data = await response.json();
   if (!response.ok || data?.ok !== true || data?.service !== "makeup-weather") {
-    throw new Error("地址有响应，但不是这个项目的 Worker。");
+    throw new Error("地址有响应，但不是这个项目的预报服务。");
   }
   return data;
 }

@@ -1,4 +1,13 @@
-import { clearWorkerUrl, probeWorker, readWorkerUrl, requestForecast, validateWorkerUrl, writeWorkerUrl } from "./api.js";
+import {
+  clearWorkerUrl,
+  devOverrideEnabled,
+  probeWorker,
+  readWorkerUrl,
+  requestForecast,
+  resolveApiUrl,
+  validateWorkerUrl,
+  writeWorkerUrl,
+} from "./api.js";
 import { formatBytes, todayParts, withToday } from "./format.js";
 import { readPhoto } from "./image.js";
 import { buildMock } from "./mock.js";
@@ -16,7 +25,11 @@ let shareUrl = "";
 function init() {
   const today = document.getElementById("today");
   if (today) today.textContent = todayParts().label;
-  refreshConnection();
+  if (devOverrideEnabled()) {
+    const settingsButton = document.getElementById("open-settings");
+    if (settingsButton) settingsButton.hidden = false;
+    refreshConnection();
+  }
 
   document.getElementById("station")?.addEventListener("submit", (event) => event.preventDefault());
   document.getElementById("open-settings")?.addEventListener("click", () => openSettings());
@@ -99,16 +112,6 @@ async function preview() {
 }
 
 async function generateLive() {
-  const saved = readWorkerUrl();
-  const check = validateWorkerUrl(saved);
-  if (!check.ok) {
-    openSettings(
-      saved
-        ? check.error
-        : "要生成真实预报，请先保存你自己的 Worker 地址。也可以先看预览示例。",
-    );
-    return;
-  }
   if (!photo) {
     setHomeError("先选一张自拍，或直接看预览示例。");
     return;
@@ -119,8 +122,9 @@ async function generateLive() {
     mimeType: photo.mimeType,
     occasion,
   };
+  const endpoint = resolveApiUrl();
   await runBusy(async () => {
-    const forecast = withToday(await requestForecast(check.url, payload));
+    const forecast = withToday(await requestForecast(endpoint, payload));
     showResult(forecast, { sample: false });
   });
 }
@@ -210,22 +214,23 @@ function setHomeError(message) {
 
 function refreshConnection() {
   const button = document.getElementById("open-settings");
-  if (!button) return;
-  const saved = readWorkerUrl();
-  if (!saved) {
-    button.textContent = "接入设置 · 未接入";
+  if (!button || !devOverrideEnabled()) return;
+  const check = validateWorkerUrl(readWorkerUrl());
+  if (!check.ok) {
+    button.textContent = "接入设置 · 内置服务";
     return;
   }
   let host = "";
   try {
-    host = new URL(saved).host;
+    host = new URL(check.url).host;
   } catch {
     host = "";
   }
-  button.textContent = host ? `接入设置 · 已保存 ${host}` : "接入设置 · 已保存";
+  button.textContent = host ? `接入设置 · 已改用 ${host}` : "接入设置 · 已改用";
 }
 
 function openSettings(errorText = "") {
+  if (!devOverrideEnabled()) return;
   const input = document.getElementById("worker-url");
   if (input) input.value = readWorkerUrl();
   const error = document.getElementById("settings-error");
@@ -279,11 +284,11 @@ async function testWorker() {
   try {
     await probeWorker(result.url);
     if (error) error.textContent = "";
-    if (message) message.textContent = `可以访问 ${new URL(result.url).host}。密钥仍然只留在 Cloudflare。`;
+    if (message) message.textContent = `可以访问 ${new URL(result.url).host}。密钥不要写进网页。`;
   } catch (probeError) {
     if (message) message.textContent = "";
     if (error) {
-      error.textContent = probeError.message || "没有连上。请确认地址、部署，以及 Worker 允许这个网页的来源。";
+      error.textContent = probeError.message || "没有连上。请确认地址，以及它允许这个网页的来源。";
     }
   } finally {
     if (button) button.disabled = false;

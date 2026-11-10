@@ -5,4 +5,4 @@ compatibility_date = "2026-11-01"
 # 不要在这个文件里写 DASHSCOPE_API_KEY，也不要放进 [vars]。
 # 在你自己的机器上执行：
 #   npx wrangler secret put DASHSCOPE_API_KEY
-# 网页只保存 Worker 地址，不会向访客索取密钥。
+# 线上页面默认请求已部署的预报服务，不会向访客索取密钥。

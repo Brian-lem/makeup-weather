@@ -39,7 +39,7 @@
         </div>
       </div>
       <p id="today" class="today"></p>
-      <button type="button" class="connection" id="open-settings">接入设置 · 未接入</button>
+      <button type="button" class="connection" id="open-settings" hidden>接入设置</button>
     </header>
 
     <main class="page">
@@ -53,7 +53,7 @@
           <ul class="points">
             <li>自拍只在这台设备上收成大约 1280px 的 JPEG，重编码会去掉位置信息。</li>
             <li>「预览示例」不联网，用来先看一份完整预报长什么样。</li>
-            <li>正式预报只发给你自己填写的 Worker。这个网站不保存照片，也不向你要 API 密钥。</li>
+            <li>正式预报发给页面自带的预报服务。这个网站不保存照片，也不向你要 API 密钥。</li>
           </ul>
         </div>
 
@@ -97,18 +97,18 @@
     <footer class="site-footer">
       <p>美学娱乐建议，不是医疗诊断。不判断皮肤疾病，不推荐处方和医美。</p>
       <p>照片不会写入这个仓库，也不会进相册。预览示例完全在本地完成。</p>
-      <p><a href="https://github.com/Brian-lem/makeup-weather">项目说明与 Worker 部署步骤</a></p>
+      <p><a href="https://github.com/Brian-lem/makeup-weather">项目说明</a></p>
     </footer>
 
     <dialog id="settings-dialog" class="settings" aria-labelledby="settings-title">
       <form id="settings-form">
-        <p class="kicker">本地保存</p>
+        <p class="kicker">开发覆盖</p>
         <h2 id="settings-title">接入设置</h2>
         <p>
-          如果你已经自己部署了 Cloudflare Worker，把地址放在这里。网页只会把缩小后的照片发给这个地址，请求结束就不留底。
+          页面已经接好预报服务，平时不用填写地址。这个面板只在地址栏带 <code>?dev=1</code> 时出现，用来把这台浏览器临时改到别的地址。清除之后会回到内置服务。
         </p>
         <p>
-          DashScope 的密钥请放在 Cloudflare 的环境变量 <strong>DASHSCOPE_API_KEY</strong> 里。这个网页不会向你索取密钥，也不要把它粘贴到下面。
+          密钥不要粘贴到下面。网页不会向你索取密钥，也不会把密钥放进仓库。
         </p>
         <label class="field" for="worker-url">Worker 地址</label>
         <input
