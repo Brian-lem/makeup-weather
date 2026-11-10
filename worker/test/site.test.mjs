@@ -3,7 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { validateWorkerUrl } from "../../js/api.js";
+import { DEFAULT_API_BASE, resolveApiUrl, validateWorkerUrl } from "../../js/api.js";
 import { buildMock } from "../../js/mock.js";
 import { isAllowedOrigin } from "../src/cors.js";
 import { handleRequest } from "../src/index.js";
@@ -33,6 +33,19 @@ test("mock forecasts stay inside the flattering score and the four dimensions", 
     assert.match(forecast.dateLabel, /年/);
     assert.equal(forecast.focusOccasion, occasion === "别的" ? "通勤" : occasion);
   }
+});
+
+test("forecasts use the Function Compute proxy unless a dev override is valid", () => {
+  assert.equal(DEFAULT_API_BASE, "https://makeup-weather-veefqfizvy.cn-hangzhou.fcapp.run");
+  assert.equal(validateWorkerUrl(DEFAULT_API_BASE).ok, true);
+  assert.equal(resolveApiUrl(), DEFAULT_API_BASE);
+  assert.equal(resolveApiUrl({ dev: false, saved: "https://old.example.workers.dev" }), DEFAULT_API_BASE);
+  assert.equal(resolveApiUrl({ dev: true, saved: "" }), DEFAULT_API_BASE);
+  assert.equal(resolveApiUrl({ dev: true, saved: "sk-abcdefghijklmnopqrstuvwxyz" }), DEFAULT_API_BASE);
+  assert.equal(
+    resolveApiUrl({ dev: true, saved: "https://old.example.workers.dev" }),
+    "https://old.example.workers.dev/",
+  );
 });
 
 test("worker address field refuses keys and the DashScope host", () => {
@@ -170,7 +183,8 @@ test("a configured handler parses the model and does not echo the key", async ()
     sawKey = init.headers.Authorization;
     sawImage = init.body.includes(jpeg);
     assert.equal(url, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
-    assert.match(init.body, /qwen-vl-max/);
+    assert.match(init.body, /qwen3-vl-plus/);
+    assert.doesNotMatch(init.body, /qwen-vl-max/);
     return new Response(
       JSON.stringify({
         choices: [
@@ -244,11 +258,16 @@ test("the repo does not contain a DashScope key or store photos", async () => {
   assert.match(html, /href="css\/styles\.css"/);
   assert.match(html, /src="js\/main\.js"/);
   assert.doesNotMatch(html, /(?:href|src)="\//);
+  assert.match(html, /id="open-settings"[^>]*\bhidden\b/);
+  assert.match(js, /https:\/\/makeup-weather-veefqfizvy\.cn-hangzhou\.fcapp\.run/);
+  assert.doesNotMatch(js, /sk-[A-Za-z0-9]{16,}/);
+  assert.doesNotMatch(html, /sk-[A-Za-z0-9]{16,}/);
 
   const worker = await readFile(join(root, "worker/src/index.js"), "utf8");
   const toml = await readFile(join(root, "worker/wrangler.toml"), "utf8");
   assert.match(worker, /env\?\.DASHSCOPE_API_KEY/);
-  assert.match(worker, /qwen-vl-max/);
+  assert.match(worker, /qwen3-vl-plus/);
+  assert.doesNotMatch(worker, /qwen-vl-max/);
   assert.match(worker, /https:\/\/dashscope\.aliyuncs\.com\/compatible-mode\/v1\/chat\/completions/);
   assert.doesNotMatch(worker, /Bearer sk-/);
   assert.doesNotMatch(toml, /DASHSCOPE_API_KEY\s*=\s*["'][^"']+["']/);

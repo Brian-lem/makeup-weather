@@ -5,7 +5,7 @@ import { assertImage, assertOccasion, normalizeForecast } from "./normalize.js";
 import { buildPrompt } from "./prompt.js";
 
 const ENDPOINT = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
-const MODEL = "qwen-vl-max";
+const MODEL = "qwen3-vl-plus";
 const limiter = createLimiter({ limit: 8, windowMs: 60_000 });
 
 function json(data, status, request) {

@@ -6,15 +6,22 @@
 
 线上页面：[https://brian-lem.github.io/makeup-weather/](https://brian-lem.github.io/makeup-weather/)
 
+打开即可使用。选一张自拍，点「生成今日预报」，不用填写地址，也不用准备 API 密钥。请求发往页面内置的预报服务：
+
+`https://makeup-weather-veefqfizvy.cn-hangzhou.fcapp.run`
+
+从 GitHub Pages 打开时，浏览器会带上来源 `https://brian-lem.github.io`。这个地址是接口位置，不是密钥。
+
 ## 照片去了哪里
 
 - 选择图片后，浏览器会把长边收到大约 1280px，重新编码成 JPEG。这一步顺便去掉原图里的位置信息。
 - 「预览示例」完全在本地运行，不上传，不请求第三方。
-- 只有在你自己保存了 Worker 地址并点击「生成今日预报」时，缩小后的照片才会发给那个地址。
-- 这个静态网站没有数据库，不写相册，也不把照片放进 `localStorage`。`localStorage` 里只有你填写的 Worker 地址（`makeup-weather.workerUrl`）。
-- Worker 示例把当次图片转给通义千问兼容接口，响应返回后即丢弃，不写入 KV、R2 或日志。
+- 点击「生成今日预报」时，缩小后的照片才会发给上面的预报服务。普通访问不会先弹出接入设置。
+- 这个静态网站没有数据库，不写相册，也不把照片放进 `localStorage`。
+- 以前保存在 `makeup-weather.workerUrl` 里的地址，普通访问不会拿来发请求。只有地址栏带 `?dev=1` 时，才会用它覆盖内置服务。
+- 预报服务把当次图片转给通义千问兼容接口，响应返回后即丢弃。
 
-通义千问会在那一次请求里看到图片，这是生成预报所需要的。密钥留在你的 Cloudflare 账号里，不出现在网页和仓库中。
+通义千问会在那一次请求里看到图片，这是生成预报所需要的。密钥留在服务端，不出现在网页和仓库中。
 
 ## 本地预览
 
@@ -26,11 +33,19 @@ python3 -m http.server 8080
 
 打开 [http://localhost:8080](http://localhost:8080)。直接双击 `index.html` 时，浏览器通常会拦截模块脚本，所以请用上面的方式。
 
-先点「预览示例」，可以不选照片、不填地址，看完整结果和分享卡。
+先点「预览示例」，可以不选照片，看完整结果和分享卡。真实预报直接点「生成今日预报」。
 
-## 接入自己的 Worker
+## 可选：临时改地址
 
-网页不会向你索取 DashScope API 密钥。部署由你自己完成，本仓库不代为部署。
+在页面地址后加上 `?dev=1`（例如 `https://brian-lem.github.io/makeup-weather/?dev=1`）会露出「接入设置」。那里可以把这台浏览器的请求临时改到别的地址，保存在 `localStorage` 的 `makeup-weather.workerUrl`。清除后恢复内置预报服务。
+
+如果输入看起来像密钥（例如以 `sk-` 开头）、带有 `api_key` 一类的查询参数，或直接填了 `dashscope.aliyuncs.com`，页面会拒绝保存。
+
+不带 `?dev=1` 时，这个面板是藏起来的，请求固定走内置地址。
+
+## 可选：自己部署 Worker
+
+线上流量走的是上面的预报服务，不是 Cloudflare Worker。仓库里的 `worker/` 仍是同一套协议的自托管示例。网页不会向你索取 DashScope API 密钥。部署由你自己完成，本仓库不代为部署。
 
 ```bash
 cd worker
@@ -41,9 +56,7 @@ npx wrangler deploy
 
 `DASHSCOPE_API_KEY` 只用 `wrangler secret` 或 Cloudflare 控制台写入。不要写进 `wrangler.toml`、`.dev.vars`（如果提交的话）或网页输入框。`.gitignore` 已忽略 `.dev.vars` 和 `.env`。
 
-部署完成后，打开页面右上角「接入设置」，粘贴 `https://<你的子域>.workers.dev`。可以先点「测试地址」。地址只保存在这台浏览器。
-
-如果输入看起来像密钥（例如以 `sk-` 开头）、带有 `api_key` 一类的查询参数，或直接填了 `dashscope.aliyuncs.com`，页面会拒绝保存。
+部署完成后，用 `?dev=1` 打开接入设置，粘贴 `https://<你的子域>.workers.dev`。可以先点「测试地址」。地址只保存在这台浏览器，而且只在这次开发覆盖里生效。
 
 ### Worker 协议
 
@@ -63,7 +76,7 @@ Worker 使用密钥调用：
 
 `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`
 
-模型是 `qwen-vl-max`。成功时返回 `{ "ok": true, "forecast": { ... } }`。`forecast` 含天气标题、图标、夸赞句、78–96 的出镜指数、四个维度、三句夸赞、三套配方、一句提醒和日期。
+模型是 `qwen3-vl-plus`。成功时返回 `{ "ok": true, "forecast": { ... } }`。`forecast` 含天气标题、图标、夸赞句、78–96 的出镜指数、四个维度、三句夸赞、三套配方、一句提醒和日期。
 
 `GET` 同一地址可做连通性检查，返回 `{ "ok": true, "service": "makeup-weather", "storesPhotos": false }`，不消耗模型额度。
 
@@ -82,8 +95,8 @@ Worker 使用密钥调用：
 ```
 index.html          页面
 css/styles.css      样式
-js/                 压缩图片、预览示例、结果、分享卡、接入设置
-worker/             Cloudflare Worker 与 wrangler.toml
+js/                 压缩图片、预览示例、结果、分享卡；内置预报地址
+worker/             可选的自托管 Cloudflare Worker 与 wrangler.toml
 worker/test/        协议、CORS、隐私相关的本地测试
 ```
 
